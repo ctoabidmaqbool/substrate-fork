@@ -100,44 +100,48 @@ public final class FileDeps {
      * Return the path to the JavaFX SDK for this configuration.
      * The path is cached on the provided configuration.
      * If it is not there yet, all dependencies are retrieved.
+     *
      * @return the location of the JavaFX SDK for the arch-os for this configuration
      * @throws IOException in case anything goes wrong.
      */
     public Path getJavaFXSDKLibsPath() throws IOException {
-        return resolvePath(configuration.getJavafxStaticLibsPath(),"Fatal error, could not install JavaFX SDK ");
+        return resolvePath(configuration.getJavafxStaticLibsPath(), "Fatal error, could not install JavaFX SDK ");
     }
 
     /**
      * Return the path to the Android SDK for this configuration.
      * The path is cached on the environment variable.
      * If it is not there yet, all dependencies are retrieved.
+     *
      * @return the location of the Android SDK for the arch-os for this configuration
      * @throws IOException in case anything goes wrong.
      */
     public Path getAndroidSDKPath() throws IOException {
-        return resolvePath(configuration.getAndroidSdkPath(),"Fatal error, could not install Android SDK ");
+        return resolvePath(configuration.getAndroidSdkPath(), "Fatal error, could not install Android SDK ");
     }
 
     /**
      * Return the path to the Android NDK for this configuration.
      * The path is cached on the environment variable.
      * If it is not there yet, all dependencies are retrieved.
+     *
      * @return the location of the Android NDK for the arch-os for this configuration
      * @throws IOException in case anything goes wrong.
      */
     public Path getAndroidNDKPath() throws IOException {
-        return resolvePath(configuration.getAndroidNdkPath(),"Fatal error, could not install Android NDK ");
+        return resolvePath(configuration.getAndroidNdkPath(), "Fatal error, could not install Android NDK ");
     }
 
     /**
      * Return the path to the sysroot for this configuration.
      * The path is cached on the environment variable.
      * If it is not there yet, all dependencies are retrieved.
+     *
      * @return the location of the sysroot for the arch of this configuration
      * @throws IOException in case anything goes wrong.
      */
     public Path getSysrootPath() throws IOException {
-        return resolvePath(configuration.getSysrootPath(),"Fatal error, could not install sysroot zip");
+        return resolvePath(configuration.getSysrootPath(), "Fatal error, could not install sysroot zip");
     }
 
     /**
@@ -163,7 +167,8 @@ public final class FileDeps {
     /**
      * For a given path, it verifies that the path exists, or else it tries
      * to install it. After that, it returns the path for this configuration.
-     * @param path the initial path
+     *
+     * @param path         the initial path
      * @param errorMessage a message that will be displayed in case of error
      * @return the location of the path for this configuration
      * @throws IOException in case anything goes wrong.
@@ -183,10 +188,10 @@ public final class FileDeps {
      * (e.g. libjava.a). When a user-supplied location is present, this location will be
      * used to check for the presence of those libraries. If the user-supplied location is
      * present, but the libraries are not there, an <code>IOException</code> is thrown.
-     *
+     * <p>
      * If no custom location has been specified, the default location for the static libs is used.
      * If no libs are found on the default location, they are downloaded and unzipped (TBD!!!)
-     *
+     * <p>
      * Verifies if Java static SDK and JavaFX static SDK (when using JavaFX) are present at
      * the default location, and contain an unmodified set of files.
      * If this is not the case, the correct SDK is downloaded and unzipped.
@@ -218,7 +223,7 @@ public final class FileDeps {
         if ((configuration.isUseJNI()) && (!configuration.getHostTriplet().equals(configuration.getTargetTriplet()))) {
             if (!Files.isDirectory(javaStaticLibs)) {
                 if (customJavaLocation) {
-                    throw new IOException ("A location for the static sdk libs was supplied, but it doesn't exist: "+javaStaticLibs);
+                    throw new IOException("A location for the static sdk libs was supplied, but it doesn't exist: " + javaStaticLibs);
                 }
                 downloadJavaStatic = true;
             } else {
@@ -229,7 +234,7 @@ public final class FileDeps {
                     Logger.logDebug("jar file not found");
                     System.err.println("jar not found");
                     if (customJavaLocation) {
-                        throw new IOException ("A location for the static sdk libs was supplied, but the java libs are missing "+javaStaticLibs);
+                        throw new IOException("A location for the static sdk libs was supplied, but the java libs are missing " + javaStaticLibs);
                     }
                     downloadJavaStatic = true;
                 } else if (!customJavaLocation && configuration.isEnableCheckHash()) {
@@ -238,7 +243,7 @@ public final class FileDeps {
                     String md5File = getChecksumFileName(defaultJavaStaticPath, "javaStaticSdk", target);
                     Map<String, String> hashes = FileOps.getHashMap(md5File);
                     if (hashes == null) {
-                        Logger.logDebug(md5File+" not found");
+                        Logger.logDebug(md5File + " not found");
                         downloadJavaStatic = true;
                     } else if (JAVA_FILES.stream()
                             .map(s -> new File(path, s))
@@ -347,9 +352,10 @@ public final class FileDeps {
 
     /**
      * Generates standardized checksum file name for a given os architecture
-     * @param base base path, parent of which will be used
+     *
+     * @param base       base path, parent of which will be used
      * @param customPart custom part of the name
-     * @param osArch os architecture
+     * @param osArch     os architecture
      * @return
      */
     private static String getChecksumFileName(Path base, String customPart, String osArch) {
@@ -359,9 +365,9 @@ public final class FileDeps {
     private void downloadJavaZip(String target) throws IOException {
         Logger.logInfo("Downloading Java Static Libs...");
         String javaZip = Strings.substitute(JAVA_STATIC_ZIP, Map.of(
-            "staticjdk", configuration.usesJDK11() ? Constants.DEFAULT_JAVASDK_PATH11 : Constants.DEFAULT_JAVASDK_PATH,
-            "version", configuration.getJavaStaticSdkVersion(),
-            "target", target));
+                "staticjdk", configuration.usesJDK11() ? Constants.DEFAULT_JAVASDK_PATH11 : Constants.DEFAULT_JAVASDK_PATH,
+                "version", configuration.getJavaStaticSdkVersion(),
+                "target", target));
         FileOps.downloadAndUnzip(JAVA_STATIC_URL + javaZip,
                 Constants.USER_SUBSTRATE_PATH,
                 javaZip,
@@ -374,9 +380,9 @@ public final class FileDeps {
     private void downloadJavaFXZip(String osarch, String variant) throws IOException {
         Logger.logInfo("Downloading JavaFX static libs...");
         String javafxZip = Strings.substitute(JAVAFX_STATIC_ZIP, Map.of(
-            "version", configuration.getJavafxStaticSdkVersion(),
-            "target", osarch,
-            "variant", variant));
+                "version", configuration.getJavafxStaticSdkVersion(),
+                "target", osarch,
+                "variant", variant));
         FileOps.downloadAndUnzip(JAVAFX_STATIC_URL + javafxZip,
                 Constants.USER_SUBSTRATE_PATH,
                 javafxZip,
@@ -388,6 +394,7 @@ public final class FileDeps {
 
     /**
      * Crafts Android SDK manager url and then downloads it
+     *
      * @throws IOException in case anything goes wrong.
      */
     private void downloadAndroidSdkManagerZip() throws IOException, InterruptedException {
@@ -395,13 +402,17 @@ public final class FileDeps {
         Path sdk = configuration.getAndroidSdkPath();
         String hostOs;
         switch (configuration.getHostTriplet().getOs()) {
-            case Constants.OS_LINUX: hostOs = "linux";
+            case Constants.OS_LINUX:
+                hostOs = "linux";
                 break;
-            case Constants.OS_WINDOWS: hostOs = "win";
+            case Constants.OS_WINDOWS:
+                hostOs = "win";
                 break;
-            case Constants.OS_DARWIN: hostOs = "mac";
+            case Constants.OS_DARWIN:
+                hostOs = "mac";
                 break;
-            default: throw new RuntimeException("Error: triplet " + configuration.getHostTriplet() + " not supported");
+            default:
+                throw new RuntimeException("Error: triplet " + configuration.getHostTriplet() + " not supported");
         }
         String androidSdkUrl = Strings.substitute(ANDROID_SDK_MANAGER_URL, Map.of("host", hostOs));
         FileOps.downloadAndUnzip(androidSdkUrl, sdk.getParent(), "android-sdk.zip", sdk.getFileName().toString(), "tmp");
@@ -414,8 +425,9 @@ public final class FileDeps {
     /**
      * Runs Android SDK's SDK manager with specified arguments
      * See https://developer.android.com/studio/command-line/sdkmanager
+     *
      * @param args array of arguments to be passed to process
-     * @throws IOException in case anything goes wrong.
+     * @throws IOException          in case anything goes wrong.
      * @throws InterruptedException in case anything goes wrong.
      */
     private void androidSdkManager(String[] args) throws IOException, InterruptedException {
@@ -435,7 +447,7 @@ public final class FileDeps {
         if (!Files.exists(manager)) {
             throw new RuntimeException("Error: sdkmanager not found at " + manager);
         }
-        String[] cliArgs = new String[] { manager.toString() };
+        String[] cliArgs = new String[]{manager.toString()};
         String[] sdkmanagerArgs = Stream.of(cliArgs, args)
                 .flatMap(Stream::of)
                 .toArray(String[]::new);
@@ -449,7 +461,8 @@ public final class FileDeps {
 
     /**
      * Downloads Android NDK and build tools
-     * @throws IOException in case anything goes wrong.
+     *
+     * @throws IOException          in case anything goes wrong.
      * @throws InterruptedException in case anything goes wrong.
      */
     private void fetchFromSdkManager() throws IOException, InterruptedException {
@@ -463,7 +476,7 @@ public final class FileDeps {
         String sysrootZip = Strings.substitute(ARCH_SYSROOT_URL, Map.of("arch", arch, "version", Constants.DEFAULT_SYSROOT_VERSION));
         FileOps.downloadAndUnzip(sysrootZip,
                 Constants.USER_SUBSTRATE_PATH,
-                arch+"sysroot.zip",
+                arch + "sysroot.zip",
                 "sysroot", "");
         Logger.logInfo("Sysroot zip downloaded successfully");
     }

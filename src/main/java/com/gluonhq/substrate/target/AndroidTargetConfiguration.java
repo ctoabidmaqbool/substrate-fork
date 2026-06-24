@@ -97,7 +97,7 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
     private final String capLocation = ANDROID_NATIVE_FOLDER + "cap/";
 
     public AndroidTargetConfiguration(ProcessPaths paths, InternalProjectConfiguration configuration) throws IOException {
-        super(paths,configuration);
+        super(paths, configuration);
 
         this.sdk = fileDeps.getAndroidSDKPath().toString();
         this.ndk = fileDeps.getAndroidNDKPath().toString();
@@ -120,10 +120,14 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
     @Override
     public boolean compile() throws IOException, InterruptedException {
         // we override compile as we need to do some checks first. If we have no ld.lld in android_ndk, we should not start compiling
-        if (ndk == null) throw new IOException ("Can't find an Android NDK on your system. Set the environment property ANDROID_NDK");
-        if (ldlld == null) throw new IOException ("You specified an android NDK, but it doesn't contain "+hostPlatformFolder+"/bin/ld.lld");
-        if (clang == null) throw new IOException ("You specified an android NDK, but it doesn't contain "+hostPlatformFolder+"/bin/clang");
-        if (objdump == null) throw new IOException ("You specified an android NDK, but it doesn't contain "+hostPlatformFolder+"/"+ ANDROID_TRIPLET +"/bin/objdump");
+        if (ndk == null)
+            throw new IOException("Can't find an Android NDK on your system. Set the environment property ANDROID_NDK");
+        if (ldlld == null)
+            throw new IOException("You specified an android NDK, but it doesn't contain " + hostPlatformFolder + "/bin/ld.lld");
+        if (clang == null)
+            throw new IOException("You specified an android NDK, but it doesn't contain " + hostPlatformFolder + "/bin/clang");
+        if (objdump == null)
+            throw new IOException("You specified an android NDK, but it doesn't contain " + hostPlatformFolder + "/" + ANDROID_TRIPLET + "/bin/objdump");
 
         return super.compile();
     }
@@ -131,10 +135,14 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
     @Override
     public boolean link() throws IOException, InterruptedException {
         // we override link as we need to do some checks first. If we have no clang in android_ndk, we should not start linking
-        if (ndk == null) throw new IOException ("Can't find an Android NDK on your system. Set the environment property ANDROID_NDK");
-        if (clang == null) throw new IOException ("You specified an android NDK, but it doesn't contain "+hostPlatformFolder+"/bin/clang");
-        if (clangpp == null) throw new IOException ("You specified an android NDK, but it doesn't contain "+hostPlatformFolder+"/bin/clang++");
-        if (sdk == null) throw new IOException ("Can't find an Android SDK on your system. Set the environment property ANDROID_SDK");
+        if (ndk == null)
+            throw new IOException("Can't find an Android NDK on your system. Set the environment property ANDROID_NDK");
+        if (clang == null)
+            throw new IOException("You specified an android NDK, but it doesn't contain " + hostPlatformFolder + "/bin/clang");
+        if (clangpp == null)
+            throw new IOException("You specified an android NDK, but it doesn't contain " + hostPlatformFolder + "/bin/clang++");
+        if (sdk == null)
+            throw new IOException("Can't find an Android SDK on your system. Set the environment property ANDROID_SDK");
 
         return super.link();
     }
@@ -149,21 +157,31 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
         copySubstrateLibraries();
         String configuration = generateSigningConfiguration();
 
+        // normalize gradlew before running
+        Path gradlewPath = getAndroidProjectPath().resolve("gradlew");
+        File gradlewFile = gradlewPath.toFile();
+        if (!System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")) {
+            // only needed on Unix-like systems
+            gradlewFile.setExecutable(true);
+            // run dos2unix equivalent: replace CRLF with LF
+            FileOps.replaceInFile(gradlewPath, "\r\n", "\n");
+        }
+
         fileDeps.checkAndroidPackages(sdk);
         // create apk for installing on device
         ProcessRunner assembleRunner = new ProcessRunner(
-                            getAndroidProjectPath().resolve("gradlew").toString(),
-                            "-p", getAndroidProjectPath().toString(),
-                            "assemble" + configuration);
+                getAndroidProjectPath().resolve("gradlew").toString(),
+                "-p", getAndroidProjectPath().toString(),
+                "assemble" + configuration);
         assembleRunner.addToEnv("ANDROID_HOME", sdk);
         assembleRunner.addToEnv("JAVA_HOME", projectConfiguration.getGraalPath().toString());
         if (assembleRunner.runProcess("package-task") != 0) {
             return false;
         }
         Path generatedApk = getAndroidProjectPath().resolve("app").resolve("build")
-                            .resolve("outputs").resolve("apk").resolve(configuration.toLowerCase(Locale.ROOT))
-                            .resolve("app-"+configuration.toLowerCase(Locale.ROOT)+".apk");
-        Path targetApk = paths.getGvmPath().resolve(projectConfiguration.getAppName()+".apk");
+                .resolve("outputs").resolve("apk").resolve(configuration.toLowerCase(Locale.ROOT))
+                .resolve("app-" + configuration.toLowerCase(Locale.ROOT) + ".apk");
+        Path targetApk = paths.getGvmPath().resolve(projectConfiguration.getAppName() + ".apk");
         if (Files.exists(generatedApk)) {
             FileOps.copyFile(generatedApk, targetApk);
         }
@@ -179,8 +197,8 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
         }
         Path generatedAAB = getAndroidProjectPath().resolve("app").resolve("build")
                 .resolve("outputs").resolve("bundle").resolve(configuration.toLowerCase(Locale.ROOT))
-                .resolve("app-"+configuration.toLowerCase(Locale.ROOT)+".aab");
-        Path targetAAB = paths.getGvmPath().resolve(projectConfiguration.getAppName()+".aab");
+                .resolve("app-" + configuration.toLowerCase(Locale.ROOT) + ".aab");
+        Path targetAAB = paths.getGvmPath().resolve(projectConfiguration.getAppName() + ".aab");
         if (Files.exists(generatedAAB)) {
             FileOps.copyFile(generatedAAB, targetAAB);
         }
@@ -191,9 +209,9 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
     public boolean install() throws IOException, InterruptedException {
         String configuration = generateSigningConfiguration();
         ProcessRunner installDebug = new ProcessRunner(
-                            getAndroidProjectPath().resolve("gradlew").toString(),
-                            "-p", getAndroidProjectPath().toString(),
-                            "install" + configuration);
+                getAndroidProjectPath().resolve("gradlew").toString(),
+                "-p", getAndroidProjectPath().toString(),
+                "install" + configuration);
         installDebug.addToEnv("ANDROID_HOME", sdk);
         installDebug.addToEnv("JAVA_HOME", projectConfiguration.getGraalPath().toString());
         return installDebug.runProcess("install-task") == 0;
@@ -254,11 +272,10 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
     @Override
     List<String> getTargetSpecificObjectFiles() throws IOException {
         if (projectConfiguration.isUseLLVM()) {
-            return FileOps.findFile(paths.getGvmPath(), "llvm.o").map( objectFile ->
+            return FileOps.findFile(paths.getGvmPath(), "llvm.o").map(objectFile ->
                     Collections.singletonList(objectFile.toAbsolutePath().toString())
             ).orElseThrow();
-        }
-        else {
+        } else {
             return super.getTargetSpecificObjectFiles();
         }
     }
@@ -366,7 +383,7 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
         }
         List<String> files = new ArrayList<>();
         for (String fileName : getAdditionalSourceFiles()) {
-            Path resource = FileOps.copyResource(getAdditionalSourceFileLocation()  + fileName, workDir.resolve(fileName));
+            Path resource = FileOps.copyResource(getAdditionalSourceFileLocation() + fileName, workDir.resolve(fileName));
             if ("launcher.c".equals(fileName)) {
                 FileOps.replaceInFile(resource, "// USER_RUNTIME_ARGS", runtimeArgs);
             }
@@ -395,7 +412,7 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
     /**
      * Walks through the jars in the classpath, excluding the JavaFX ones,
      * and looks for META-INF/substrate/dalvik/*.class files.
-     *
+     * <p>
      * The method will copy all the class files found into jar in the target folder
      *
      * @throws IOException
@@ -519,13 +536,13 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
             Files.deleteIfExists(Path.of(androidProject.toString(), "app", "src", "main", "java", "com", "gluonhq", "helloandroid", "NativeWebView.java"));
         }
         androidProject.resolve("gradlew").toFile().setExecutable(true);
-       return androidProject;
+        return androidProject;
     }
 
     /**
      * If build.gradle or android manifest are present in src/android, they will be copied to
      * android project.
-     *
+     * <p>
      * Else, default build.gradle and android manifest are adjusted and used in project
      * configuration.
      *
@@ -551,11 +568,17 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
             Files.copy(userBuild, targetBuild, StandardCopyOption.REPLACE_EXISTING);
         }
 
+        ReleaseConfiguration releaseConfiguration = projectConfiguration.getReleaseConfiguration();
+
+        // Copy .keystore file
+        Path userKeystore = sourcePath.resolve(releaseConfiguration.getProvidedKeyStorePath());
+        Path targetKeystore = getAndroidProjectPath().resolve("app").resolve(releaseConfiguration.getProvidedKeyStorePath());
+
+        Files.copy(userKeystore, targetKeystore, StandardCopyOption.REPLACE_EXISTING);
+
         Path userManifest = sourcePath.resolve(Constants.MANIFEST_FILE);
         Path targetManifest = getAndroidProjectMainPath().resolve(Constants.MANIFEST_FILE);
         Path generatedManifest = paths.getGenPath().resolve(targetOS).resolve(Constants.MANIFEST_FILE);
-
-        ReleaseConfiguration releaseConfiguration = projectConfiguration.getReleaseConfiguration();
 
         if (!Files.exists(userManifest)) {
             // use default manifest
@@ -596,7 +619,7 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
     /**
      * If resources are present in src/android, they would
      * be copied to android project.
-     *
+     * <p>
      * Else, default resources are used
      *
      * @return the path where resources are located
@@ -629,6 +652,7 @@ public class AndroidTargetConfiguration extends PosixTargetConfiguration {
      * android package name friendly version. It does this by removing all
      * characters that don't match the following characters: a-z, A-Z, 0-9,
      * dot or underscore.
+     *
      * @return
      */
     private String getAndroidPackageName() {

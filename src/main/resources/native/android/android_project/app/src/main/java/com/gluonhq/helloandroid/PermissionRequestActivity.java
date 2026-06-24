@@ -39,6 +39,8 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.util.Log;
 
+import androidx.annotation.RequiresApi;
+
 import java.util.Arrays;
 
 /**
@@ -126,6 +128,7 @@ public class PermissionRequestActivity extends Activity {
         activity.startActivity(intent);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     private static boolean verify(Activity activity, String[] permissionsName) {
         if (activity == null || permissionsName == null) {
             return false;

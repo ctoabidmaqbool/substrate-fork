@@ -65,16 +65,16 @@ import java.util.stream.Stream;
 /**
  * AbstractTargetConfiguration is the main class that implements the necessary
  * methods to compile, link and run a native image
- *
+ * <p>
  * It is extended by different subclasses according to the selected target OS
  */
 public abstract class AbstractTargetConfiguration implements TargetConfiguration {
 
     private static final String URL_CLIBS_ZIP = "https://download2.gluonhq.com/substrate/clibs/${osarch}${version}.zip";
     private static final List<String> RESOURCES_BY_EXTENSION = Arrays.asList(
-            "png", "jpg", "jpeg", "gif", "bmp", "ttf", "raw",
-            "xml", "fxml", "css", "gls", "json", "dat",
-            "license", "frag", "vert", "obj", "mtl", "js", "zip");
+            "png", "PNG", "jpg", "jpeg", "gif", "bmp", "ico", "svg", "ttf", "raw",
+            "xml", "html", "fxml", "css", "gls", "json", "dat",
+            "license", "frag", "vert", "obj", "mtl", "js", "zip","properties", "xlsm");
     /**
      * Manual registration of the HomeFinderFeature required until GraalVM for JDK 21.
      */
@@ -177,8 +177,8 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         compileRunner.addArg(Constants.NATIVE_IMAGE_ARG_CLASSPATH);
         compileRunner.addArg(substrateClasspath + File.pathSeparator + FileOps.createPathingJar(paths.getTmpPath(), processedClasspath));
         projectConfiguration.getCompilerArgs().stream()
-            .filter(arg -> arg != null && !arg.isEmpty())
-            .forEach(compileRunner::addArg);
+                .filter(arg -> arg != null && !arg.isEmpty())
+                .forEach(compileRunner::addArg);
         compileRunner.addArg(projectConfiguration.getMainClassName());
 
         postProcessCompilerArguments(compileRunner.getCmdList());
@@ -214,10 +214,10 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         linkRunner.addArgs(getTargetSpecificObjectFiles());
 
         linkRunner.addArgs(getNativeCodeList().stream()
-            .map(s -> s.replaceAll("\\..*", "." + getObjectFileExtension()))
-            .distinct()
-            .map(sourceFile -> gvmAppPath.resolve(sourceFile).toString())
-            .collect(Collectors.toList()));
+                .map(s -> s.replaceAll("\\..*", "." + getObjectFileExtension()))
+                .distinct()
+                .map(sourceFile -> gvmAppPath.resolve(sourceFile).toString())
+                .collect(Collectors.toList()));
 
         linkRunner.addArgs(getTargetSpecificJavaLinkLibraries());
         linkRunner.addArgs(getTargetSpecificLinkFlags(projectConfiguration.isUseJavaFX(),
@@ -256,6 +256,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
 
     /**
      * Runs the generated native image
+     *
      * @return a string with the last logged output of the process
      * @throws IOException
      * @throws InterruptedException
@@ -283,6 +284,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
     /**
      * Run the generated native image and returns true if the process ended
      * successfully
+     *
      * @return true if the process ended successfully, false otherwise
      * @throws IOException
      * @throws InterruptedException
@@ -307,6 +309,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
 
     /**
      * Creates a native image that can be used as shared library
+     *
      * @return true if the process succeeded or false if the process failed
      * @throws IOException
      * @throws InterruptedException
@@ -318,6 +321,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
 
     /**
      * Creates a static library
+     *
      * @return true if the process succeeded or false if the process failed
      * @throws IOException
      * @throws InterruptedException
@@ -360,9 +364,9 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         processRunner.addArgs(getNativeCodeList());
 
         for (String fileName : getAdditionalHeaderFiles()) {
-            FileOps.copyResource(getAdditionalSourceFileLocation()  + fileName, workDir.resolve(fileName));
+            FileOps.copyResource(getAdditionalSourceFileLocation() + fileName, workDir.resolve(fileName));
         }
-  
+
         int result = processRunner.runProcess("compile-additional-sources", workDir.toFile());
         // we need more checks (e.g. do launcher.o and thread.o exist?)
         return result == 0;
@@ -470,7 +474,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
      * Creates a list of Paths that will be added to the library search path for the linker.
      * Targets are allowed to override this, e.g. in case they don't want the static JDK
      * directory on the library path (see https://github.com/gluonhq/substrate/issues/879)
-     *
+     * <p>
      * Note: we should probably invert this logic: the static library path should not be
      * used as linkLibraryPath unless explicitly asked by the target.
      *
@@ -822,6 +826,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
 
     /**
      * Allow platforms to check if specific libraries (e.g. libjvm.a) are present in the specified clib path
+     *
      * @param clibPath
      */
     void checkPlatformSpecificClibs(Path clibPath) throws IOException {
@@ -949,6 +954,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
 
     /**
      * Return the list of library names applicable to the used java version.
+     *
      * @param libs List to validate based on {@link Lib#inRange(int)}.
      * @return The list of library names applicable to the used java version.
      */
@@ -992,9 +998,9 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         }
         List<String> extensions = getTargetNativeCodeExtensions();
         return Files.list(nativeCodeDir)
-            .map(p -> p.getFileName().toString())
-            .filter(s -> extensions.stream().anyMatch(e -> s.endsWith(e)))
-            .collect(Collectors.toList());
+                .map(p -> p.getFileName().toString())
+                .filter(s -> extensions.stream().anyMatch(e -> s.endsWith(e)))
+                .collect(Collectors.toList());
     }
 
     List<String> getTargetSpecificLinkFlags(boolean useJavaFX, boolean usePrismSW) throws IOException, InterruptedException {
@@ -1027,8 +1033,9 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
     /**
      * It generates the link flags for a given list of native libraries,
      * at a given location
+     *
      * @param libPath the path to the folder with the native libraries
-     * @param libs the list of names of native libraries
+     * @param libs    the list of names of native libraries
      * @return a list with link flag options
      */
     List<String> getTargetSpecificNativeLibsFlags(Path libPath, List<String> libs) {
@@ -1092,7 +1099,7 @@ public abstract class AbstractTargetConfiguration implements TargetConfiguration
         String objectFilename = projectConfiguration.getMainClassName().toLowerCase(Locale.ROOT) + "." + getObjectFileExtension();
         Path objectFile = FileOps.findFile(gvmPath, objectFilename).orElseThrow(()
                 -> new IllegalArgumentException(
-                        "Linking failed, since there is no objectfile named " + objectFilename + " under " + gvmPath.toString())
+                "Linking failed, since there is no objectfile named " + objectFilename + " under " + gvmPath.toString())
         );
         return objectFile;
     }
